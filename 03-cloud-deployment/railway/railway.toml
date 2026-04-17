@@ -5,13 +5,13 @@
 # ============================================================
 
 [build]
-# Railway tự detect Dockerfile nếu có.
-# Nếu không có Dockerfile, dùng Nixpacks (auto-detect Python).
+# Deploy từ repo root bằng Nixpacks.
+# requirements.txt ở root sẽ cài cùng dependencies với 02-docker/production.
 builder = "NIXPACKS"
 
 [deploy]
-# ✅ Start command — Railway inject PORT tự động
-startCommand = "uvicorn app:app --host 0.0.0.0 --port $PORT"
+# Dùng cùng app với 02-docker/production qua cloud_app.py
+startCommand = "uvicorn cloud_app:app --host 0.0.0.0 --port $PORT"
 
 # Health check — Railway restart nếu fail
 healthcheckPath = "/health"
@@ -23,6 +23,9 @@ restartPolicyMaxRetries = 3
 
 # ============================================================
 # Environment variables đặt qua Railway Dashboard hoặc CLI:
-#   railway variables set OPENAI_API_KEY=sk-...
+#   railway variables set SHOPAIKEY_API_KEY=sk-...
+#   railway variables set CUSTOM_PROVIDER_MODEL=qwen3-coder-480b-a35b-instruct
+#   railway variables set CHATBOT_DEFAULT_PROVIDER=custom
+#   railway variables set CHATBOT_MOCK_ONLY=false
 #   railway variables set ENVIRONMENT=production
 # ============================================================

@@ -1,0 +1,57 @@
+name: Railway Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/railway-deploy.yml"
+      - "railway.toml"
+      - "cloud_app.py"
+      - "requirements.txt"
+      - "02-docker/**"
+      - "03-cloud-deployment/**"
+      - "utils/**"
+  workflow_dispatch:
+
+concurrency:
+  group: railway-deploy-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Python Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Smoke Test Shared App
+        run: |
+          python -m compileall utils cloud_app.py 02-docker/production/main.py
+          python -c "from cloud_app import app; print(app.title)"
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Check Railway Token
+        run: test -n "$RAILWAY_TOKEN"
+
+      - name: Deploy To Railway
+        run: railway up --ci --service ai-agent

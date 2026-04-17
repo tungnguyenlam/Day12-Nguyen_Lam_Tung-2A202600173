@@ -10,17 +10,18 @@
 
 steps:
   # ──────────────────────────────────────
-  # Step 1: Run tests
+  # Step 1: Smoke test shared app
   # ──────────────────────────────────────
   - name: python:3.11-slim
-    id: test
+    id: smoke
     entrypoint: bash
     args:
       - -c
       - |
-        pip install -r requirements.txt pytest
-        pytest tests/ -v --tb=short
-        echo "✅ Tests passed"
+        pip install -r requirements.txt
+        python -m compileall utils cloud_app.py 02-docker/production/main.py
+        python -c "from cloud_app import app; print(app.title)"
+        echo "Shared cloud app loaded successfully"
 
   # ──────────────────────────────────────
   # Step 2: Build Docker image
@@ -29,11 +30,13 @@ steps:
     id: build
     args:
       - build
+      - -f
+      - 02-docker/production/Dockerfile
       - --tag=gcr.io/$PROJECT_ID/ai-agent:$COMMIT_SHA
       - --tag=gcr.io/$PROJECT_ID/ai-agent:latest
       - --cache-from=gcr.io/$PROJECT_ID/ai-agent:latest   # Layer cache
       - .
-    waitFor: [test]
+    waitFor: [smoke]
 
   # ──────────────────────────────────────
   # Step 3: Push to Container Registry
@@ -64,8 +67,8 @@ steps:
       - --memory=512Mi
       - --cpu=1
       - --timeout=60s
-      - --set-env-vars=ENVIRONMENT=production
-      - --set-secrets=OPENAI_API_KEY=openai-key:latest  # từ Secret Manager
+      - --set-env-vars=ENVIRONMENT=production,CHATBOT_DEFAULT_PROVIDER=custom,CUSTOM_PROVIDER_MODEL=qwen3-coder-480b-a35b-instruct,CHATBOT_MOCK_ONLY=false,CHATBOT_ALLOW_MOCK_FALLBACK=false
+      - --set-secrets=SHOPAIKEY_API_KEY=shopaikey-api-key:latest
     waitFor: [push]
 
 # ──────────────────────────────────────

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docker Chat Lab</title>
+  <style>
+    :root {
+      --bg: #f4efe4;
+      --panel: rgba(255, 252, 245, 0.88);
+      --ink: #1f2a1f;
+      --muted: #5d665d;
+      --accent: #d96c38;
+      --accent-deep: #a64519;
+      --line: rgba(31, 42, 31, 0.12);
+      --user: #214939;
+      --assistant: #fffaf2;
+      --shadow: 0 20px 60px rgba(54, 45, 28, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans", "Trebuchet MS", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(217, 108, 56, 0.18), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(33, 73, 57, 0.14), transparent 32%),
+        linear-gradient(160deg, #f8f2e6 0%, #efe4d0 55%, #ece7de 100%);
+      padding: 24px;
+    }
+
+    .shell {
+      max-width: 1160px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .chat-card {
+      min-height: calc(100vh - 48px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+    }
+
+    .topbar {
+      padding: 24px 24px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .title {
+      margin: 0;
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      max-width: 58ch;
+      line-height: 1.5;
+      font-size: 0.98rem;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 0.88rem;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button,
+    .select-wrap {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .select-wrap {
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      min-width: 180px;
+    }
+
+    select {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      padding: 12px 0;
+      color: var(--ink);
+    }
+
+    button {
+      cursor: pointer;
+      padding: 12px 16px;
+      transition: transform 120ms ease, background 120ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary {
+      background: var(--accent);
+      color: white;
+      border-color: transparent;
+    }
+
+    .secondary {
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--ink);
+    }
+
+    .messages {
+      padding: 22px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .message {
+      max-width: 82%;
+      padding: 14px 16px;
+      border-radius: 18px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      animation: float-in 180ms ease;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: var(--user);
+      color: white;
+      border-bottom-right-radius: 6px;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--assistant);
+      border: 1px solid var(--line);
+      border-bottom-left-radius: 6px;
+    }
+
+    .meta {
+      margin-top: 8px;
+      font-size: 0.74rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .assistant .meta {
+      color: var(--muted);
+    }
+
+    .composer {
+      border-top: 1px solid var(--line);
+      padding: 18px 22px 22px;
+      display: grid;
+      gap: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      resize: vertical;
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.92);
+      outline: none;
+      color: var(--ink);
+    }
+
+    .composer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .hint {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .sidebar {
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .sidebar h2,
+    .sidebar h3 {
+      margin: 0 0 6px;
+      line-height: 1.1;
+    }
+
+    .info-block {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+    }
+
+    .mono {
+      font-family: "IBM Plex Mono", "Consolas", monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .status-live {
+      color: #145c2d;
+    }
+
+    .status-mock {
+      color: var(--accent-deep);
+    }
+
+    @keyframes float-in {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 960px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .chat-card {
+        min-height: 72vh;
+      }
+
+      .topbar {
+        flex-direction: column;
+      }
+
+      .actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .select-wrap,
+      .actions button {
+        width: 100%;
+      }
+
+      .message {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="card chat-card">
+      <header class="topbar">
+        <div>
+          <h1 class="title">Docker Chat Lab</h1>
+          <p class="subtitle">
+            Multi-turn chatbot with provider switching. It keeps session memory,
+            works with a real OpenAI-compatible endpoint when configured, and
+            falls back to mock mode only when needed.
+          </p>
+          <div class="pill-row">
+            <span class="pill" id="status-pill">Loading status...</span>
+            <span class="pill" id="model-pill">Model: --</span>
+            <span class="pill" id="session-pill">Session: new</span>
+          </div>
+        </div>
+        <div class="actions">
+          <label class="select-wrap">
+            <select id="provider-select"></select>
+          </label>
+          <button class="secondary" id="new-chat">New Chat</button>
+          <button class="secondary" id="docs-link" type="button">Docs</button>
+        </div>
+      </header>
+
+      <main class="messages" id="messages"></main>
+
+      <footer class="composer">
+        <textarea
+          id="prompt"
+          placeholder="Ask a coding or Docker question. Press Enter to send, Shift+Enter for a new line."
+        ></textarea>
+        <div class="composer-row">
+          <div class="hint" id="hint">
+            The selected provider and session are sent with every message.
+          </div>
+          <button class="primary" id="send">Send Message</button>
+        </div>
+      </footer>
+    </section>
+
+    <aside class="card sidebar">
+      <div class="info-block">
+        <h2>Runtime</h2>
+        <div class="mono" id="runtime-summary">Loading...</div>
+      </div>
+      <div class="info-block">
+        <h3>Provider Preview</h3>
+        <div class="mono" id="provider-preview">Loading...</div>
+      </div>
+      <div class="info-block">
+        <h3>Presentation Flow</h3>
+        <div class="mono">1. Select custom provider.
+2. Ask a first question.
+3. Ask a follow-up in the same session.
+4. Show that session memory is preserved.
+5. Open /docs if the lecturer wants the raw API.</div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById("messages");
+    const providerSelect = document.getElementById("provider-select");
+    const promptEl = document.getElementById("prompt");
+    const sendButton = document.getElementById("send");
+    const newChatButton = document.getElementById("new-chat");
+    const docsLink = document.getElementById("docs-link");
+    const statusPill = document.getElementById("status-pill");
+    const modelPill = document.getElementById("model-pill");
+    const sessionPill = document.getElementById("session-pill");
+    const runtimeSummary = document.getElementById("runtime-summary");
+    const providerPreview = document.getElementById("provider-preview");
+    const hintEl = document.getElementById("hint");
+
+    let sessionId = null;
+    let providerMap = new Map();
+
+    function appendMessage(role, content, meta = "") {
+      const wrapper = document.createElement("article");
+      wrapper.className = `message ${role}`;
+      wrapper.textContent = content;
+
+      if (meta) {
+        const metaEl = document.createElement("div");
+        metaEl.className = "meta";
+        metaEl.textContent = meta;
+        wrapper.appendChild(metaEl);
+      }
+
+      messagesEl.appendChild(wrapper);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function renderWelcome() {
+      messagesEl.innerHTML = "";
+      appendMessage(
+        "assistant",
+        "Session ready. Ask a first question to start the conversation.",
+        "The chatbot will reuse the same session_id for follow-up turns."
+      );
+    }
+
+    function updateSessionPill() {
+      sessionPill.textContent = sessionId ? `Session: ${sessionId}` : "Session: new";
+    }
+
+    function updateProviderPreview() {
+      const config = providerMap.get(providerSelect.value);
+      if (!config) {
+        providerPreview.textContent = "No provider selected.";
+        return;
+      }
+
+      providerPreview.textContent = JSON.stringify(
+        {
+          name: config.name,
+          configured: config.configured,
+          model: config.resolved_model,
+          base_url: config.base_url,
+          client_preview: config.client_preview
+        },
+        null,
+        2
+      );
+    }
+
+    async function loadProviders() {
+      const response = await fetch("/providers");
+      const data = await response.json();
+
+      providerMap = new Map(data.providers.map((item) => [item.name, item]));
+      providerSelect.innerHTML = "";
+
+      data.providers.forEach((provider) => {
+        const option = document.createElement("option");
+        option.value = provider.name;
+        option.textContent = `${provider.label} · ${provider.resolved_model}`;
+        providerSelect.appendChild(option);
+      });
+
+      providerSelect.value = data.default_provider || "custom";
+      runtimeSummary.textContent = JSON.stringify(
+        {
+          default_provider: data.default_provider,
+          force_mock: data.force_mock,
+          allow_mock_fallback: data.allow_mock_fallback
+        },
+        null,
+        2
+      );
+      updateProviderPreview();
+    }
+
+    async function sendMessage() {
+      const question = promptEl.value.trim();
+      if (!question) {
+        return;
+      }
+
+      const provider = providerSelect.value;
+      appendMessage("user", question, provider);
+      promptEl.value = "";
+      sendButton.disabled = true;
+      hintEl.textContent = "Waiting for the provider response...";
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            question,
+            provider,
+            session_id: sessionId
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "Request failed");
+        }
+
+        sessionId = data.session_id;
+        updateSessionPill();
+
+        const modeText = `${data.mode} · ${data.provider} · ${data.model}`;
+        appendMessage("assistant", data.answer, modeText);
+
+        statusPill.textContent = data.mock_only ? "Mode: mock" : "Mode: live";
+        statusPill.className = `pill ${data.mock_only ? "status-mock" : "status-live"}`;
+        modelPill.textContent = `Model: ${data.model}`;
+        hintEl.textContent = data.mock_only
+          ? `Fallback reason: ${data.mode_reason}`
+          : "Live provider call succeeded.";
+      } catch (error) {
+        appendMessage("assistant", `Error: ${error.message}`, "request failed");
+        statusPill.textContent = "Mode: error";
+        modelPill.textContent = "Model: unavailable";
+        hintEl.textContent = "Check provider credentials or container logs.";
+      } finally {
+        sendButton.disabled = false;
+        promptEl.focus();
+      }
+    }
+
+    providerSelect.addEventListener("change", () => {
+      updateProviderPreview();
+      hintEl.textContent = "Provider changed. Start a new chat to reset context cleanly.";
+    });
+
+    newChatButton.addEventListener("click", () => {
+      sessionId = null;
+      updateSessionPill();
+      renderWelcome();
+      hintEl.textContent = "Fresh session. The next message will create a new session_id.";
+    });
+
+    docsLink.addEventListener("click", () => {
+      window.open("/docs", "_blank");
+    });
+
+    sendButton.addEventListener("click", sendMessage);
+    promptEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    renderWelcome();
+    updateSessionPill();
+    loadProviders().catch((error) => {
+      runtimeSummary.textContent = `Failed to load providers: ${error.message}`;
+      providerPreview.textContent = "Provider metadata unavailable.";
+    });
+  </script>
+</body>
+</html>

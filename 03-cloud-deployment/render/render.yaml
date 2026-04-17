@@ -16,7 +16,7 @@ services:
     plan: free                # free | starter | standard | pro
 
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn cloud_app:app --host 0.0.0.0 --port $PORT
 
     healthCheckPath: /health   # Render check path này
 
@@ -27,11 +27,17 @@ services:
         value: production
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: CHATBOT_DEFAULT_PROVIDER
+        value: custom
+      - key: CUSTOM_PROVIDER_MODEL
+        value: qwen3-coder-480b-a35b-instruct
+      - key: CHATBOT_MOCK_ONLY
+        value: "false"
+      - key: CHATBOT_ALLOW_MOCK_FALLBACK
+        value: "false"
       # Secrets — set qua Render Dashboard (không commit giá trị thật)
-      - key: OPENAI_API_KEY
+      - key: SHOPAIKEY_API_KEY
         sync: false            # sync: false = set thủ công trên dashboard
-      - key: AGENT_API_KEY
-        generateValue: true    # Render tự sinh random value
 
     # Disk (nếu agent cần lưu file)
     # disk:
@@ -52,5 +58,6 @@ services:
 #   1. Push code lên GitHub
 #   2. Render Dashboard → New → Blueprint
 #   3. Connect repo → Render đọc render.yaml này
+#   4. Set SHOPAIKEY_API_KEY trong dashboard
 #   4. Review và Deploy
 # ============================================================

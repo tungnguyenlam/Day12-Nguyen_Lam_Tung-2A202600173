@@ -52,16 +52,19 @@ spec:
               value: production
             - name: PORT
               value: "8000"
+            - name: CHATBOT_DEFAULT_PROVIDER
+              value: custom
+            - name: CUSTOM_PROVIDER_MODEL
+              value: qwen3-coder-480b-a35b-instruct
+            - name: CHATBOT_MOCK_ONLY
+              value: "false"
+            - name: CHATBOT_ALLOW_MOCK_FALLBACK
+              value: "false"
             # Secret từ Secret Manager — KHÔNG hardcode
-            - name: OPENAI_API_KEY
+            - name: SHOPAIKEY_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: openai-key
-                  key: latest
-            - name: AGENT_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: agent-api-key
+                  name: shopaikey-api-key
                   key: latest
 
           # ──────────────────────────────────────

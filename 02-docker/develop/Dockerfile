@@ -14,14 +14,14 @@ WORKDIR /app
 COPY 02-docker/develop/requirements.txt .
 
 # Bước 4: Cài dependencies
+ENV PIP_DEFAULT_TIMEOUT=120
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Bước 5: Copy code vào container
 COPY 02-docker/develop/app.py .
 
-# Bước 6: Copy mock utils (from build context root)
-RUN mkdir -p utils
-COPY utils/mock_llm.py utils/
+# Bước 6: Copy shared utils (mock llm + provider wrapper + session memory)
+COPY utils /app/utils
 
 # Bước 7: Expose port để documentation (không bắt buộc)
 EXPOSE 8000

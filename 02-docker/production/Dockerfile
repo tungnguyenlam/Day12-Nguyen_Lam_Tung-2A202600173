@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y \
 # Copy và cài requirements
 # Dùng --user để install vào /root/.local (dễ copy sang stage 2)
 COPY 02-docker/production/requirements.txt .
+ENV PIP_DEFAULT_TIMEOUT=120
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 
@@ -47,9 +48,8 @@ COPY --from=builder /root/.local /home/appuser/.local
 # Copy source code
 COPY 02-docker/production/main.py .
 
-# Copy utils from project root
-RUN mkdir -p /app/utils
-COPY utils/mock_llm.py /app/utils/mock_llm.py
+# Copy shared utils from project root
+COPY utils /app/utils
 
 # Đặt ownership cho appuser
 RUN chown -R appuser:appuser /app
@@ -69,7 +69,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 # Start command
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
 
 # ============================================================
 # Build commands (from project root):

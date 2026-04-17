@@ -1,0 +1,16 @@
+# ============================================================
+# Root Railway config
+#
+# Deploy the shared cloud app from the repository root.
+# This reuses the same FastAPI app as 02-docker/production.
+# ============================================================
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "uvicorn cloud_app:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
