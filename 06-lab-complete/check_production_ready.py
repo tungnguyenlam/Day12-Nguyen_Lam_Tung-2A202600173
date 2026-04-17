@@ -41,6 +41,20 @@ def run_checks():
     results.append(check("railway.toml or render.yaml exists",
                          os.path.exists(os.path.join(base, "railway.toml")) or
                          os.path.exists(os.path.join(base, "render.yaml"))))
+    results.append(check("app/auth.py exists",
+                         os.path.exists(os.path.join(base, "app", "auth.py"))))
+    results.append(check("app/rate_limiter.py exists",
+                         os.path.exists(os.path.join(base, "app", "rate_limiter.py"))))
+    results.append(check("app/cost_guard.py exists",
+                         os.path.exists(os.path.join(base, "app", "cost_guard.py"))))
+    results.append(check("app/session_store.py exists",
+                         os.path.exists(os.path.join(base, "app", "session_store.py"))))
+    results.append(check("utils/mock_llm.py exists",
+                         os.path.exists(os.path.join(base, "utils", "mock_llm.py"))))
+    results.append(check("utils/provider_wrapper.py exists",
+                         os.path.exists(os.path.join(base, "utils", "provider_wrapper.py"))))
+    results.append(check("utils/chat_ui.html exists",
+                         os.path.exists(os.path.join(base, "utils", "chat_ui.html"))))
 
     # ── Security ──────────────────────────────────���
     print("\n🔒 Security")
@@ -83,10 +97,16 @@ def run_checks():
                              '"/health"' in content or "'/health'" in content))
         results.append(check("/ready endpoint defined",
                              '"/ready"' in content or "'/ready'" in content))
+        results.append(check("/chat endpoint defined",
+                             '"/chat"' in content or "'/chat'" in content))
+        results.append(check("/ui endpoint defined",
+                             '"/ui"' in content or "'/ui'" in content))
         results.append(check("Authentication implemented",
                              "api_key" in content.lower() or "verify_token" in content))
         results.append(check("Rate limiting implemented",
                              "rate_limit" in content.lower() or "429" in content))
+        results.append(check("Redis/stateless session storage implemented",
+                             "session_store" in content or "redis" in content.lower()))
         results.append(check("Graceful shutdown (SIGTERM)",
                              "SIGTERM" in content))
         results.append(check("Structured logging (JSON)",

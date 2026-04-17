@@ -1,8 +1,8 @@
 #  Delivery Checklist — Day 12 Lab Submission
 
-> **Student Name:** _________________________  
-> **Student ID:** _________________________  
-> **Date:** _________________________
+> **Student Name:** Nguyễn Lâm Tùng  
+> **Student ID:** 2A202600173  
+> **Date:** 17/4/2026
 
 ---
 
@@ -45,8 +45,8 @@ Create a file `MISSION_ANSWERS.md` with your answers to all exercises:
 ## Part 3: Cloud Deployment
 
 ### Exercise 3.1: Railway deployment
-- URL: https://your-app.railway.app
-- Screenshot: [Link to screenshot in repo]
+- URL: https://ai-agent-production-3925.up.railway.app/
+- Screenshot: [images/image.png]
 
 ## Part 4: API Security
 

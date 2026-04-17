@@ -5,12 +5,11 @@ services:
     build: .
     ports:
       - "8000:8000"
-    environment:
-      - ENVIRONMENT=staging
-      - APP_NAME=Production AI Agent
-      - REDIS_URL=redis://redis:6379/0
     env_file:
       - .env.local
+    environment:
+      - ENVIRONMENT=staging
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       redis:
         condition: service_healthy
@@ -22,12 +21,25 @@ services:
       retries: 3
       start_period: 15s
     restart: unless-stopped
+    networks:
+      - agent_net
 
   redis:
     image: redis:7-alpine
     command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 3
+    networks:
+      - agent_net
+
+volumes:
+  redis_data:
+
+networks:
+  agent_net:
+    driver: bridge

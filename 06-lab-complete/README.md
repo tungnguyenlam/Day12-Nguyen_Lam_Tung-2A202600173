@@ -1,39 +1,40 @@
 # Lab 12 — Complete Production Agent
 
-Kết hợp TẤT CẢ những gì đã học trong 1 project hoàn chỉnh.
-
-## Checklist Deliverable
-
-- [x] Dockerfile (multi-stage, < 500 MB)
-- [x] docker-compose.yml (agent + redis)
-- [x] .dockerignore
-- [x] Health check endpoint (`GET /health`)
-- [x] Readiness endpoint (`GET /ready`)
-- [x] API Key authentication
-- [x] Rate limiting
-- [x] Cost guard
-- [x] Config từ environment variables
-- [x] Structured logging
-- [x] Graceful shutdown
-- [x] Public URL ready (Railway / Render config)
+Kết hợp toàn bộ Day 12 vào một app cuối cùng:
+- API key authentication
+- Rate limiting `10 req/min`
+- Monthly cost guard `$10/month`
+- Multi-turn chat với session memory
+- Redis-backed stateless session storage
+- Health + readiness checks
+- Structured logging
+- Graceful shutdown
+- Browser UI tại `/ui`
+- Deploy configs cho Docker, Railway, và Render
 
 ---
 
 ## Cấu Trúc
 
-```
+```text
 06-lab-complete/
 ├── app/
-│   ├── main.py         # Entry point — kết hợp tất cả
-│   ├── config.py       # 12-factor config
-│   ├── auth.py         # API Key + JWT
-│   ├── rate_limiter.py # Rate limiting
-│   └── cost_guard.py   # Budget protection
-├── Dockerfile          # Multi-stage, production-ready
-├── docker-compose.yml  # Full stack
-├── railway.toml        # Deploy Railway
-├── render.yaml         # Deploy Render
-├── .env.example        # Template
+│   ├── main.py          # Final FastAPI app
+│   ├── config.py        # 12-factor settings
+│   ├── auth.py          # API key auth
+│   ├── rate_limiter.py  # 10 req/min sliding window
+│   ├── cost_guard.py    # $10/month budget guard
+│   └── session_store.py # Redis-backed session storage
+├── utils/
+│   ├── provider_wrapper.py
+│   ├── mock_llm.py
+│   ├── chat_ui.html
+│   └── ui_assets.py
+├── Dockerfile
+├── docker-compose.yml
+├── railway.toml
+├── render.yaml
+├── .env.example
 ├── .dockerignore
 └── requirements.txt
 ```
@@ -43,51 +44,89 @@ Kết hợp TẤT CẢ những gì đã học trong 1 project hoàn chỉnh.
 ## Chạy Local
 
 ```bash
-# 1. Setup
-cp .env.example .env
+cd 06-lab-complete
+cp .env.example .env.local
+```
 
-# 2. Chạy với Docker Compose
-docker compose up
+Điền các biến tối thiểu:
+- `AGENT_API_KEY`
+- `SHOPAIKEY_API_KEY` nếu muốn live custom provider
 
-# 3. Test
-curl http://localhost/health
+Chạy với Docker Compose:
 
-# 4. Lấy API key từ .env, test endpoint
-API_KEY=$(grep AGENT_API_KEY .env | cut -d= -f2)
-curl -H "X-API-Key: $API_KEY" \
-     -X POST http://localhost/ask \
-     -H "Content-Type: application/json" \
-     -d '{"question": "What is deployment?"}'
+```bash
+docker compose up --build
+```
+
+Mở UI:
+
+```text
+http://localhost:8000/ui
+```
+
+Test health:
+
+```bash
+curl http://localhost:8000/health
+curl http://localhost:8000/ready
+```
+
+Test protected API:
+
+```bash
+API_KEY=$(grep AGENT_API_KEY .env.local | cut -d= -f2)
+
+curl -X POST http://localhost:8000/chat \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"provider":"custom","question":"Explain graceful shutdown briefly."}'
+```
+
+Test `/ask` alias:
+
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"provider":"custom","question":"What is Redis used for?"}'
 ```
 
 ---
 
-## Deploy Railway (< 5 phút)
+## Deploy Railway
 
 ```bash
-# Cài Railway CLI
-npm i -g @railway/cli
-
-# Login và deploy
+cd 06-lab-complete
 railway login
 railway init
-railway variables set OPENAI_API_KEY=sk-...
 railway variables set AGENT_API_KEY=your-secret-key
+railway variables set SHOPAIKEY_API_KEY=your-provider-key
+railway variables set CUSTOM_PROVIDER_MODEL=qwen3-coder-480b-a35b-instruct
+railway variables set CHATBOT_DEFAULT_PROVIDER=custom
+railway variables set REDIS_URL=redis://...
 railway up
-
-# Nhận public URL!
-railway domain
 ```
+
+Nếu chưa có Redis trên Railway, có thể tạm bật:
+
+```bash
+railway variables set ALLOW_IN_MEMORY_SESSIONS=true
+```
+
+Nhưng đó chỉ nên dùng cho demo ngắn, không phải production thật.
 
 ---
 
 ## Deploy Render
 
-1. Push repo lên GitHub
-2. Render Dashboard → New → Blueprint
-3. Connect repo → Render đọc `render.yaml`
-4. Set secrets: `OPENAI_API_KEY`, `AGENT_API_KEY`
-5. Deploy → Nhận URL!
+1. Push repo lên GitHub.
+2. Render Dashboard → `New` → `Blueprint`.
+3. Connect repo → Render đọc `render.yaml`.
+4. Set secrets:
+   - `SHOPAIKEY_API_KEY`
+   - `AGENT_API_KEY`
+   - `REDIS_URL`
+5. Deploy.
 
 ---
 
@@ -97,4 +136,4 @@ railway domain
 python check_production_ready.py
 ```
 
-Script này kiểm tra tất cả items trong checklist và báo cáo những gì còn thiếu.
+Checker này xác nhận các phần cốt lõi của final project trước khi nộp bài.

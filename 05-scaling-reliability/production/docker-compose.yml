@@ -18,13 +18,11 @@ services:
   agent:
     build:
       context: ../..
-      dockerfile: 05-scaling-reliability/advanced/Dockerfile
+      dockerfile: 05-scaling-reliability/production/Dockerfile
     environment:
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT=demo
       - PORT=8000
-    env_file:
-      - .env.local
     depends_on:
       redis:
         condition: service_healthy
@@ -39,7 +37,6 @@ services:
       - agent_net
     # Không expose port — chỉ access qua nginx
     deploy:
-      replicas: 3           # ← scale to 3 instances
       resources:
         limits:
           cpus: "0.5"

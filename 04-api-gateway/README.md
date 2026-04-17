@@ -19,7 +19,7 @@ develop/
 
 ### Chạy thử
 ```bash
-cd basic
+cd 04-api-gateway/develop
 pip install -r requirements.txt
 AGENT_API_KEY=my-secret-key python app.py
 
@@ -32,6 +32,9 @@ curl -H "X-API-Key: my-secret-key" http://localhost:8000/ask \
 curl http://localhost:8000/ask -X POST \
      -H "Content-Type: application/json" \
      -d '{"question": "hello"}'
+
+# Hoặc chạy test script
+python test_auth.py
 ```
 
 ---
@@ -50,7 +53,7 @@ production/
 
 ### Chạy thử
 ```bash
-cd advanced
+cd 04-api-gateway/production
 pip install -r requirements.txt
 python app.py
 

@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
 
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
@@ -139,10 +139,21 @@ async def chat(body: ChatRequest):
     # Thêm câu hỏi vào history
     append_to_history(session_id, "user", body.question)
 
-    # Gọi LLM với context (trong mock, ta chỉ dùng câu hỏi hiện tại)
+    # Load lại history sau khi đã lưu user message
     session = load_session(session_id)
     history = session.get("history", [])
+    previous_user_questions = [
+        msg["content"]
+        for msg in history[:-1]
+        if msg["role"] == "user"
+    ]
+
     answer = ask(body.question)
+    if previous_user_questions:
+        answer += (
+            f" Session memory says I have seen {len(previous_user_questions)} earlier "
+            f'user turns. Latest previous question: "{previous_user_questions[-1]}".'
+        )
 
     # Lưu response vào history
     append_to_history(session_id, "assistant", answer)
@@ -151,7 +162,7 @@ async def chat(body: ChatRequest):
         "session_id": session_id,
         "question": body.question,
         "answer": answer,
-        "turn": len([m for m in history if m["role"] == "user"]) + 1,
+        "turn": len([m for m in history if m["role"] == "user"]),
         "served_by": INSTANCE_ID,  # ← thấy rõ bất kỳ instance nào cũng serve được
         "storage": "redis" if USE_REDIS else "in-memory",
     }
